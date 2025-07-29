@@ -11,29 +11,63 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Printer, Eye, EyeOff, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const { login, register } = useAuth()
+  const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    setError("")
+    
+    const formData = new FormData(e.target as HTMLFormElement)
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+
+    const result = await login(email, password)
+    
+    if (result.success) {
+      router.push('/dashboard')
+    } else {
+      setError(result.error || 'Login failed')
+    }
+    
     setIsLoading(false)
-    // Redirect to dashboard
-    window.location.href = "/dashboard"
   }
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    setError("")
+    
+    const formData = new FormData(e.target as HTMLFormElement)
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const firstName = formData.get('firstName') as string
+    const lastName = formData.get('lastName') as string
+    const company = formData.get('company') as string
+
+    const result = await register({
+      email,
+      password,
+      firstName,
+      lastName,
+      company: company || undefined,
+    })
+    
+    if (result.success) {
+      router.push('/dashboard')
+    } else {
+      setError(result.error || 'Registration failed')
+    }
+    
     setIsLoading(false)
-    // Redirect to dashboard
-    window.location.href = "/dashboard"
   }
 
   return (
@@ -68,11 +102,17 @@ export default function LoginPage() {
               </TabsList>
 
               <TabsContent value="login">
+                {error && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                )}
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
+                      name="email"
                       type="email"
                       placeholder="john@company.com"
                       required
@@ -84,6 +124,7 @@ export default function LoginPage() {
                     <div className="relative">
                       <Input
                         id="password"
+                        name="password"
                         type={showPassword ? "text" : "password"}
                         placeholder="Enter your password"
                         required
@@ -120,12 +161,18 @@ export default function LoginPage() {
               </TabsContent>
 
               <TabsContent value="signup">
+                {error && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                )}
                 <form onSubmit={handleSignup} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName">First Name</Label>
                       <Input
                         id="firstName"
+                        name="firstName"
                         placeholder="John"
                         required
                         className="border-slate-200 focus:border-blue-500"
@@ -135,6 +182,7 @@ export default function LoginPage() {
                       <Label htmlFor="lastName">Last Name</Label>
                       <Input
                         id="lastName"
+                        name="lastName"
                         placeholder="Doe"
                         required
                         className="border-slate-200 focus:border-blue-500"
